@@ -1,0 +1,25 @@
+[Unit]
+Description=xpsec-lab proxy HTTPS (ProxyBrowser)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=proxylab
+Group=proxylab
+WorkingDirectory=/opt/proxy-browser
+ExecStart=/usr/bin/node /opt/proxy-browser/server/proxy-server.js
+Restart=on-failure
+RestartSec=3
+
+# Endurecimento do serviço (defesa em profundidade no lab)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/proxy-browser/server/certs
+# Porta >1024 não precisa de privilégio; se usar 443, descomente:
+# AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

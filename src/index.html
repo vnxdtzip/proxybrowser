@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+<title>ProxyBrowser</title>
+<style>
+  :root { --bg:#14161a; --bar:#1d2026; --line:#2b2f37; --fg:#e6e8ec; --mut:#8b929e;
+          --ok:#3fb950; --bad:#f85149; --warn:#d29922; --accent:#4c8bf5; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg);
+              font:13px/1.4 system-ui,Segoe UI,sans-serif; }
+  body { display:flex; flex-direction:column; }
+  #bar { display:flex; gap:6px; align-items:center; padding:8px;
+         background:var(--bar); border-bottom:1px solid var(--line); }
+  button { background:#262a31; color:var(--fg); border:1px solid var(--line);
+           border-radius:6px; padding:6px 10px; cursor:pointer; }
+  button:hover { background:#2f343d; }
+  button:disabled { opacity:.4; cursor:default; }
+  #url { flex:1; background:#0f1115; color:var(--fg); border:1px solid var(--line);
+         border-radius:6px; padding:7px 10px; outline:none; }
+  #url:focus { border-color:var(--accent); }
+  #status { display:flex; gap:14px; align-items:center; padding:5px 10px;
+            background:var(--bar); border-top:1px solid var(--line);
+            color:var(--mut); font-size:12px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block;
+         margin-right:5px; vertical-align:middle; background:var(--mut); }
+  .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.warn{background:var(--warn)}
+  #view { flex:1; border:0; display:flex; }
+  webview { flex:1; }
+  code { color:var(--fg); }
+</style>
+</head>
+<body>
+  <div id="bar">
+    <button id="back"  title="Voltar">◀</button>
+    <button id="fwd"   title="Avançar">▶</button>
+    <button id="reload" title="Recarregar">⟳</button>
+    <input id="url" type="text" placeholder="https://..." spellcheck="false" />
+    <button id="go">Ir</button>
+  </div>
+
+  <webview id="view" src="about:blank"
+           allowpopups
+           webpreferences="contextIsolation=yes,nodeIntegration=no"></webview>
+
+  <div id="status">
+    <span><span id="connDot" class="dot"></span><span id="connText">iniciando…</span></span>
+    <span>proxy: <code id="proxyText">—</code></span>
+    <span id="pageText">—</span>
+  </div>
+
+<script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "proxy-browser",
+  "productName": "ProxyBrowser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Navegador Electron minimo com todo o trafego forcado por um proxy HTTPS (teste de red team).",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-packager . ProxyBrowser --platform=win32 --arch=x64 --out=dist --overwrite --ignore=^/server --ignore=^/dist --ignore=^/config\\.json$",
+    "server": "node server/proxy-server.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^45.5.0"
+  }
+}

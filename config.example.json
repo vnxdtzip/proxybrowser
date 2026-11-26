@@ -1,0 +1,17 @@
+{
+  "_comment": "Copie para config.json e preencha. host/port/username/password tem que bater nos dois lados (VPS e cliente). O bloco proxy e lido pela VPS e pelo cliente; hardening e homePage so pelo cliente.",
+  "proxy": {
+    "scheme": "https",
+    "host": "SEU.IP.PUBLICO.DA.VPS",
+    "port": 8443,
+    "username": "aluno",
+    "password": "TROQUE-POR-UMA-SENHA-FORTE"
+  },
+  "hardening": {
+    "disableQuic": true,
+    "failClosedDns": false,
+    "webrtcNoLeak": true,
+    "spkiPin": "COLE-O-SPKI-PIN-IMPRESSO-PELO-PROXY-NO-BOOT"
+  },
+  "homePage": "https://example.com"
+}
