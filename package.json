@@ -7,7 +7,9 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "package": "electron-packager . ProxyBrowser --platform=win32 --arch=x64 --out=dist --overwrite --ignore=^/server --ignore=^/dist --ignore=^/config\\.json$",
+    "encrypt-config": "node build/encrypt-config.js",
+    "package": "electron-packager . ProxyBrowser --platform=win32 --arch=x64 --out=dist --overwrite --ignore=^/server --ignore=^/dist --ignore=^/build --ignore=^/config\\.json$",
+    "build": "npm run encrypt-config && npm run package",
     "server": "node server/proxy-server.js"
   },
   "devDependencies": {

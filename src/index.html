@@ -3,52 +3,296 @@
 <head>
 <meta charset="utf-8" />
 <meta http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' https: data:" />
 <title>ProxyBrowser</title>
 <style>
-  :root { --bg:#14161a; --bar:#1d2026; --line:#2b2f37; --fg:#e6e8ec; --mut:#8b929e;
-          --ok:#3fb950; --bad:#f85149; --warn:#d29922; --accent:#4c8bf5; }
+  :root { --bg:#15171c; --bar:#1c1f26; --bar2:#23262e; --line:#2c303a; --fg:#e7e9ee;
+          --mut:#8a909c; --ok:#4ec073; --bad:#e5604f; --warn:#d6a53a; --accent:#5a8dd6; }
   * { box-sizing:border-box; }
   html,body { margin:0; height:100%; background:var(--bg); color:var(--fg);
-              font:13px/1.4 system-ui,Segoe UI,sans-serif; }
-  body { display:flex; flex-direction:column; }
-  #bar { display:flex; gap:6px; align-items:center; padding:8px;
-         background:var(--bar); border-bottom:1px solid var(--line); }
-  button { background:#262a31; color:var(--fg); border:1px solid var(--line);
-           border-radius:6px; padding:6px 10px; cursor:pointer; }
-  button:hover { background:#2f343d; }
-  button:disabled { opacity:.4; cursor:default; }
-  #url { flex:1; background:#0f1115; color:var(--fg); border:1px solid var(--line);
-         border-radius:6px; padding:7px 10px; outline:none; }
-  #url:focus { border-color:var(--accent); }
-  #status { display:flex; gap:14px; align-items:center; padding:5px 10px;
+              font:13px/1.45 system-ui,'Segoe UI',sans-serif; user-select:none; }
+  body { display:flex; flex-direction:column; overflow:hidden; }
+  button { font:inherit; color:inherit; }
+  svg { display:block; }
+  .ic { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.8;
+        stroke-linecap:round; stroke-linejoin:round; }
+
+  /* abas */
+  #tabstrip { display:flex; align-items:flex-end; gap:2px; padding:6px 8px 0 8px;
+              background:var(--bar); overflow-x:auto; overflow-y:hidden; }
+  #tabstrip::-webkit-scrollbar { height:0; width:0; }
+  .tab { display:flex; align-items:center; gap:9px; max-width:220px; min-width:120px;
+         height:34px; padding:0 10px; background:var(--bar2); border:1px solid var(--line);
+         border-bottom:none; border-radius:8px 8px 0 0; cursor:default; color:var(--mut); }
+  .tab:hover { background:#282c35; }
+  .tab.active { background:var(--bg); color:var(--fg); }
+  .tab .fav { width:16px; height:16px; flex:none; display:flex; align-items:center; justify-content:center; }
+  .tab .fav img { width:16px; height:16px; border-radius:3px; }
+  .tab .fav .ic { width:14px; height:14px; color:var(--mut); stroke-width:1.6; }
+  .tab .fav .spin { width:13px; height:13px; border:2px solid var(--line);
+                    border-top-color:var(--accent); border-radius:50%; animation:sp .7s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .tab-title { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12.5px; }
+  .tab-close { width:18px; height:18px; flex:none; border-radius:4px; display:flex;
+               align-items:center; justify-content:center; color:var(--mut); }
+  .tab-close:hover { background:#3a3f49; color:var(--fg); }
+  .tab-close .ic { width:12px; height:12px; }
+  #newtab { background:transparent; border:none; border-radius:6px; color:var(--mut);
+            width:30px; height:30px; cursor:pointer; margin-bottom:2px;
+            display:flex; align-items:center; justify-content:center; }
+  #newtab:hover { background:var(--bar2); color:var(--fg); }
+
+  /* barra */
+  #bar { display:flex; gap:6px; align-items:center; padding:8px 10px;
+         background:var(--bar); border-bottom:1px solid var(--line); position:relative; }
+  .nav { background:transparent; border:none; border-radius:7px; width:32px; height:32px;
+         cursor:pointer; color:var(--fg); display:flex; align-items:center; justify-content:center; }
+  .nav:hover:not(:disabled) { background:var(--bar2); }
+  .nav:disabled { opacity:.3; cursor:default; }
+  #urlwrap { flex:1; display:flex; align-items:center; gap:9px; background:var(--bg);
+             border:1px solid var(--line); border-radius:8px; padding:0 12px; height:34px; }
+  #urlwrap:focus-within { border-color:var(--accent); }
+  #lock { flex:none; display:flex; align-items:center; color:var(--mut); }
+  #lock.sec { color:var(--ok); } #lock.insec { color:var(--warn); }
+  #lock .ic { width:15px; height:15px; }
+  #url { flex:1; background:transparent; border:none; outline:none; color:var(--fg);
+         font-size:13px; user-select:text; }
+  .tool { background:transparent; border:1px solid var(--line); border-radius:8px;
+          height:34px; padding:0 12px; cursor:pointer; color:var(--fg);
+          display:flex; align-items:center; gap:8px; font-size:12.5px; }
+  .tool:hover { background:var(--bar2); }
+  .tool .ic { width:15px; height:15px; color:var(--mut); }
+
+  #progress { position:absolute; left:0; bottom:-1px; height:2px; width:0;
+              background:var(--accent); transition:width .2s ease; opacity:0; }
+  #progress.on { opacity:1; }
+
+  #views { flex:1; display:flex; position:relative; background:var(--bg); }
+  #views webview { flex:1; }
+
+  /* tela de erro (quando a página não carrega) */
+  #errOverlay { position:absolute; inset:0; z-index:5; display:none;
+                align-items:center; justify-content:center; background:var(--bg); }
+  #errOverlay.show { display:flex; }
+  .eo-box { max-width:440px; padding:28px; text-align:center; }
+  .eo-ic { color:var(--bad); display:flex; justify-content:center; margin-bottom:14px; }
+  .eo-ic .ic { width:40px; height:40px; stroke-width:1.6; }
+  .eo-t { font-size:16px; font-weight:600; margin-bottom:8px; }
+  .eo-msg { font-size:12.5px; color:var(--mut); line-height:1.5; }
+  .eo-url { font-size:11.5px; color:var(--mut); margin-top:10px; word-break:break-all; opacity:.75; }
+  .eo-box button { margin-top:18px; background:var(--accent); color:#fff; border:none;
+                   border-radius:7px; padding:9px 18px; cursor:pointer; font-size:12.5px; }
+  .eo-box button:hover { filter:brightness(1.07); }
+
+  /* footer minimalista */
+  #status { display:flex; gap:10px; align-items:center; padding:4px 12px; height:24px;
             background:var(--bar); border-top:1px solid var(--line);
-            color:var(--mut); font-size:12px; }
-  .dot { width:8px; height:8px; border-radius:50%; display:inline-block;
-         margin-right:5px; vertical-align:middle; background:var(--mut); }
+            color:var(--mut); font-size:11.5px; }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--mut); flex:none; }
   .dot.ok{background:var(--ok)} .dot.bad{background:var(--bad)} .dot.warn{background:var(--warn)}
-  #view { flex:1; border:0; display:flex; }
-  webview { flex:1; }
-  code { color:var(--fg); }
+  #pageText { margin-left:auto; max-width:60%; white-space:nowrap; overflow:hidden;
+              text-overflow:ellipsis; direction:rtl; text-align:right; }
+
+  /* painéis */
+  .panel { position:absolute; top:50px; right:10px; width:360px; z-index:50;
+           background:var(--bar); border:1px solid var(--line); border-radius:12px;
+           box-shadow:0 10px 30px rgba(0,0,0,.4); padding:16px; display:none; }
+  .panel.open { display:block; }
+  .p-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .p-h { font-size:13.5px; font-weight:600; }
+  .p-x { width:26px; height:26px; border:none; background:transparent; color:var(--mut);
+         border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .p-x:hover { background:var(--bar2); color:var(--fg); }
+  .p-x .ic { width:15px; height:15px; }
+  .p-dest { color:var(--mut); font-size:12px; margin:-4px 0 12px; }
+  .p-dest b { color:var(--fg); font-weight:600; }
+
+  /* circuito */
+  .circuit { margin:2px 0 8px; }
+  .node { display:flex; gap:11px; align-items:stretch; }
+  .node .pin { width:12px; display:flex; flex-direction:column; align-items:center; flex:none; }
+  .node .pin i { width:9px; height:9px; border-radius:50%; background:var(--accent); flex:none; margin-top:3px; }
+  .node.you .pin i { background:var(--fg); }
+  .node.fail .pin i { background:var(--bad); }
+  .node.fail .t { color:var(--bad); }
+  .node .pin .line { flex:1; width:2px; background:var(--line); margin:3px 0; min-height:16px; }
+  .node:last-child .pin .line { display:none; }
+  .node .body { padding-bottom:12px; }
+  .node .t { font-size:12.5px; }
+  .node .s { font-size:11px; color:var(--mut); margin-top:1px; }
+  .link-label { font-size:10.5px; color:var(--mut); margin:-8px 0 4px 23px; }
+
+  .p-exit { background:var(--bg); border:1px solid var(--line); border-radius:9px;
+            padding:10px 12px; margin:4px 0 0; }
+  .p-exit .lbl { font-size:11px; color:var(--mut); }
+  .p-exit .val { font-size:12.5px; font-weight:600; margin-top:2px; word-break:break-all; }
+  .p-exit button { margin-top:9px; width:100%; background:var(--accent); color:#fff;
+                   border:none; border-radius:7px; padding:8px; cursor:pointer; font-size:12.5px; }
+  .p-exit button:hover { filter:brightness(1.07); }
+  .p-exit button:disabled { opacity:.6; cursor:default; }
+
+  /* proteções (toggles) */
+  .p-sec { margin-top:14px; border-top:1px solid var(--line); padding-top:12px; }
+  .p-sec-h { font-size:11px; letter-spacing:.03em; text-transform:uppercase;
+             color:var(--mut); margin-bottom:8px; }
+  .row { display:flex; align-items:center; gap:10px; padding:7px 0; }
+  .row .rt { font-size:12.5px; }
+  .row .rs { font-size:10.5px; color:var(--mut); margin-top:1px; }
+  .row .rtxt { flex:1; }
+  .row.read .state { font-size:11px; color:var(--mut); }
+  .row.read .state.on { color:var(--ok); }
+  .sw { width:38px; height:22px; border-radius:12px; border:1px solid var(--line);
+        background:var(--bar2); position:relative; cursor:pointer; flex:none; transition:background .15s; }
+  .sw::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+               border-radius:50%; background:var(--mut); transition:transform .15s,background .15s; }
+  .sw.on { background:var(--accent); border-color:var(--accent); }
+  .sw.on::after { transform:translateX(16px); background:#fff; }
+
+  .restart { display:none; align-items:center; gap:10px; margin-top:12px; padding:9px 11px;
+             background:var(--bg); border:1px solid var(--line); border-radius:9px; font-size:11.5px; color:var(--mut); }
+  .restart.show { display:flex; }
+  .restart span { flex:1; }
+  .restart button { background:var(--accent); color:#fff; border:none; border-radius:7px;
+                    padding:6px 12px; cursor:pointer; font-size:12px; }
+
+  /* identidade */
+  #idPanel label { display:block; font-size:11px; color:var(--mut); margin:10px 0 5px; }
+  #idPanel select, #idPanel textarea { width:100%; background:var(--bg); color:var(--fg);
+          border:1px solid var(--line); border-radius:7px; padding:8px 10px;
+          font:12px/1.4 'Segoe UI',sans-serif; outline:none; resize:vertical; }
+  #idPanel select:focus, #idPanel textarea:focus { border-color:var(--accent); }
+  #uaCustom { min-height:56px; display:none; }
+  #uaCustom.show { display:block; }
+  #idPanel .apply { margin-top:12px; width:100%; background:var(--accent); color:#fff;
+                    border:none; border-radius:7px; padding:9px; cursor:pointer; font-size:12.5px; }
+  #idPanel .apply:hover { filter:brightness(1.07); }
+  #uaNow { font-size:10.5px; color:var(--mut); margin-top:10px; word-break:break-all;
+           background:var(--bg); border:1px solid var(--line); border-radius:7px; padding:8px 10px; }
 </style>
 </head>
 <body>
-  <div id="bar">
-    <button id="back"  title="Voltar">◀</button>
-    <button id="fwd"   title="Avançar">▶</button>
-    <button id="reload" title="Recarregar">⟳</button>
-    <input id="url" type="text" placeholder="https://..." spellcheck="false" />
-    <button id="go">Ir</button>
+  <div id="tabstrip">
+    <button id="newtab" title="Nova aba (Ctrl+T)" aria-label="Nova aba">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
   </div>
 
-  <webview id="view" src="about:blank"
-           allowpopups
-           webpreferences="contextIsolation=yes,nodeIntegration=no"></webview>
+  <div id="bar">
+    <button class="nav" id="back" title="Voltar (Alt+Esquerda)" aria-label="Voltar">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="nav" id="fwd" title="Avançar (Alt+Direita)" aria-label="Avançar">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button class="nav" id="reload" title="Recarregar (F5)" aria-label="Recarregar">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 4v5h-5"/></svg></button>
+
+    <div id="urlwrap">
+      <span id="lock" title="segurança da conexão"></span>
+      <input id="url" type="text" placeholder="Pesquisar ou digitar endereço" spellcheck="false" />
+    </div>
+
+    <button class="tool" id="idBtn" title="Identidade do navegador (User-Agent)">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span>Identidade</span>
+    </button>
+    <button class="tool" id="circuitBtn" title="Como o tráfego está saindo">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M12 8v8"/></svg>
+      <span>Circuito</span>
+    </button>
+    <div id="progress"></div>
+  </div>
+
+  <div id="views">
+    <div id="errOverlay">
+      <div class="eo-box">
+        <div class="eo-ic"><svg class="ic" viewBox="0 0 24 24"><path d="M12 4l8 15H4z"/><path d="M12 10v4M12 16.5v.3"/></svg></div>
+        <div class="eo-t" id="eoTitle">Não foi possível carregar a página</div>
+        <div class="eo-msg" id="eoMsg">—</div>
+        <div class="eo-url" id="eoUrl"></div>
+        <button id="eoRetry">Tentar novamente</button>
+      </div>
+    </div>
+  </div>
 
   <div id="status">
-    <span><span id="connDot" class="dot"></span><span id="connText">iniciando…</span></span>
-    <span>proxy: <code id="proxyText">—</code></span>
-    <span id="pageText">—</span>
+    <span id="connDot" class="dot"></span><span id="connText"></span>
+    <span id="pageText"></span>
+  </div>
+
+  <!-- circuito -->
+  <div class="panel" id="circuitPanel">
+    <div class="p-top">
+      <div class="p-h">Como seu tráfego está saindo</div>
+      <button class="p-x" id="cpClose" title="Fechar" aria-label="Fechar">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="p-dest">Site atual: <b id="cpDest">—</b></div>
+
+    <div class="circuit">
+      <div class="node you">
+        <div class="pin"><i></i><span class="line"></span></div>
+        <div class="body"><div class="t">Você</div><div class="s">este dispositivo</div></div>
+      </div>
+      <div class="link-label">TLS até o proxy</div>
+      <div class="node" id="cpProxyNode">
+        <div class="pin"><i></i><span class="line"></span></div>
+        <div class="body"><div class="t" id="cpProxy">Proxy</div>
+          <div class="s" id="cpProxyGeo">HTTPS</div></div>
+      </div>
+      <div class="link-label">saída</div>
+      <div class="node dest">
+        <div class="pin"><i></i></div>
+        <div class="body"><div class="t" id="cpDest2">Destino</div>
+          <div class="s">o site vê o IP do proxy</div></div>
+      </div>
+    </div>
+
+    <div class="p-exit">
+      <div class="lbl">IP de saída visto pelos sites</div>
+      <div class="val" id="cpExit">não verificado</div>
+      <button id="cpCheck">Verificar saída</button>
+    </div>
+
+    <div class="p-sec">
+      <div class="p-sec-h">Proteções de vazamento</div>
+      <div class="row">
+        <div class="rtxt"><div class="rt">Bloquear QUIC / HTTP3</div>
+          <div class="rs">fecha saída por UDP fora do proxy</div></div>
+        <button class="sw" id="swQuic" role="switch"></button>
+      </div>
+      <div class="row">
+        <div class="rtxt"><div class="rt">Proteger WebRTC</div>
+          <div class="rs">não revela IP local via WebRTC</div></div>
+        <button class="sw" id="swWebrtc" role="switch"></button>
+      </div>
+      <div class="row">
+        <div class="rtxt"><div class="rt">DNS fail-closed</div>
+          <div class="rs">resolução local falha em vez de vazar</div></div>
+        <button class="sw" id="swDns" role="switch"></button>
+      </div>
+      <div class="row read">
+        <div class="rtxt"><div class="rt">Cert do proxy fixado (SPKI)</div>
+          <div class="rs">confia só no certificado da VPS</div></div>
+        <span class="state" id="stSpki">—</span>
+      </div>
+      <div class="restart" id="restartBar">
+        <span>QUIC e DNS só mudam após reiniciar.</span>
+        <button id="restartBtn">Reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- identidade / user-agent -->
+  <div class="panel" id="idPanel">
+    <div class="p-top">
+      <div class="p-h">Identidade do navegador</div>
+      <button class="p-x" id="idClose" title="Fechar" aria-label="Fechar">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <label for="uaPreset">Perfil (User-Agent)</label>
+    <select id="uaPreset"></select>
+    <textarea id="uaCustom" spellcheck="false" placeholder="Cole aqui o User-Agent personalizado"></textarea>
+    <button class="apply" id="uaApply">Aplicar e recarregar</button>
+    <div id="uaNow">—</div>
   </div>
 
 <script src="renderer.js"></script>

@@ -1,17 +1,13 @@
 {
-  "_comment": "Copie para config.json e preencha. host/port/username/password tem que bater nos dois lados (VPS e cliente). O bloco proxy e lido pela VPS e pelo cliente; hardening e homePage so pelo cliente.",
+  "_comment": "Copie para config.json e preencha. O bloco proxy e lido pela VPS e pelo cliente; userAgent e homePage so pelo cliente. As protecoes (QUIC/WebRTC/DNS) agora sao ajustadas na UID do app (menu Circuito) e ficam no userData, nao aqui.",
   "proxy": {
     "scheme": "https",
     "host": "SEU.IP.PUBLICO.DA.VPS",
-    "port": 8443,
+    "port": 443,
     "username": "aluno",
-    "password": "TROQUE-POR-UMA-SENHA-FORTE"
-  },
-  "hardening": {
-    "disableQuic": true,
-    "failClosedDns": false,
-    "webrtcNoLeak": true,
+    "password": "TROQUE-POR-UMA-SENHA-FORTE",
     "spkiPin": "COLE-O-SPKI-PIN-IMPRESSO-PELO-PROXY-NO-BOOT"
   },
+  "userAgent": "",
   "homePage": "https://example.com"
 }
