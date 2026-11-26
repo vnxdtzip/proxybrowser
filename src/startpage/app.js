@@ -1,5 +1,5 @@
 'use strict';
-// Página inicial do ProxyBrowser: globo 3D em canvas (sem dependências) com um
+// Página inicial do Unleashed Browser: globo 3D em canvas (sem dependências) com um
 // arco "Você -> VPS", barra de progresso, mensagens teatrais de conexão e uma
 // verificação REAL da saída pelo proxy (fetch ipinfo) que conclui em Conectado
 // ou Falha. Carregada via file://, então abre mesmo com o proxy fora.
@@ -159,7 +159,18 @@ function step() {
     setTimeout(step, STEP_MS);
   }
 }
-step();
+
+// anim=0 (abas depois da primeira): pula o teatro, só verifica rápido.
+const ANIM = qs.get('anim') !== '0';
+let minMs;
+if (ANIM) {
+  step();
+  minMs = STEPS.length * STEP_MS + 250;
+} else {
+  msgEl.textContent = 'Verificando saída...';
+  setBar(85);
+  minMs = 200;
+}
 
 // verificação real: fetch pela saída do proxy (ipinfo). Sucesso => túnel de pé.
 let data = null, err = null;
@@ -168,7 +179,7 @@ const probe = fetch('https://ipinfo.io/json', { cache: 'no-store' })
   .then(d => { data = d; })
   .catch(e => { err = e; });
 
-const minTime = new Promise(r => setTimeout(r, STEPS.length * STEP_MS + 250));
+const minTime = new Promise(r => setTimeout(r, minMs));
 
 Promise.all([minTime, probe]).then(() => {
   if (data && data.ip) onConnected(data); else onFailed(err);

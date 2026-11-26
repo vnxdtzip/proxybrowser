@@ -1,4 +1,4 @@
-// ProxyBrowser — processo principal (Electron)
+// Unleashed Browser — processo principal (Electron)
 // Lab xpsec academy: navegador que força TODO o tráfego por um proxy HTTPS.
 //
 // Pontos de ensino implementados aqui:
@@ -46,7 +46,7 @@ function loadConfig() {
   }
   if (!src) {
     fatalConfig('Nenhum config encontrado.\n\nColoque um config.json ao lado do ' +
-      'ProxyBrowser.exe, ou compile com config embutido (npm run build).');
+      'Unleashed Browser.exe, ou compile com config embutido (npm run build).');
   }
   try {
     return JSON.parse(src.text);
@@ -56,7 +56,7 @@ function loadConfig() {
 }
 
 function fatalConfig(msg) {
-  try { dialog.showErrorBox('ProxyBrowser — config', msg); } catch (_) {}
+  try { dialog.showErrorBox('Unleashed Browser — config', msg); } catch (_) {}
   console.error(msg);
   app.exit(1);
   throw new Error(msg);
@@ -86,7 +86,11 @@ function defaultSettings() {
   return {
     disableQuic:   h.disableQuic  !== false,  // padrão: ligado
     failClosedDns: !!h.failClosedDns,          // padrão: desligado
-    webrtcNoLeak:  h.webrtcNoLeak !== false     // padrão: ligado
+    webrtcNoLeak:  h.webrtcNoLeak !== false,    // padrão: ligado
+    // Privacidade (padrão: tudo bloqueado)
+    blockCamMic:        true,
+    blockGeo:           true,
+    blockNotifications: true
   };
 }
 function loadSettings() {
@@ -154,12 +158,42 @@ function applyWebRTCAll() {
   }
 }
 
+// --- Privacidade: controla as permissões que os sites pedem ---
+// Por padrão o Chromium concederia várias. Aqui negamos tudo o que é sensível,
+// com toggles para câmera/mic, geolocalização e notificações. Os handlers leem
+// SETTINGS em tempo real, então mudanças valem na próxima requisição (sem reiniciar).
+function permAllowed(permission) {
+  switch (permission) {
+    case 'media':         return !SETTINGS.blockCamMic;        // câmera + microfone
+    case 'geolocation':   return !SETTINGS.blockGeo;
+    case 'notifications': return !SETTINGS.blockNotifications;
+    // Inofensivas para a navegação — liberadas:
+    case 'fullscreen':
+    case 'pointerLock':
+    case 'keyboardLock':
+    case 'clipboard-sanitized-write':
+    case 'mediaKeySystem':                                     // DRM (streaming)
+      return true;
+    // Tudo o mais sensível (USB, HID, serial, bluetooth, MIDI, captura de tela,
+    // leitura de clipboard, sensores, abrir apps externos, etc.): negado.
+    default:
+      return false;
+  }
+}
+function setupPrivacy() {
+  const ses = session.defaultSession;
+  ses.setPermissionRequestHandler((_wc, permission, cb) => cb(permAllowed(permission)));
+  ses.setPermissionCheckHandler((_wc, permission) => permAllowed(permission));
+  try { ses.setDevicePermissionHandler(() => false); } catch (_) {}
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1280,
     height: 860,
     backgroundColor: '#14161a',
-    title: 'ProxyBrowser',
+    title: 'Unleashed Browser',
+    icon: path.join(__dirname, 'assets', 'logo512.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -188,7 +222,8 @@ ipcMain.handle('get-settings', () => ({ ...SETTINGS }));
 ipcMain.handle('set-settings', (_e, patch) => {
   const before = { ...SETTINGS };
   if (patch && typeof patch === 'object') {
-    for (const k of ['disableQuic', 'failClosedDns', 'webrtcNoLeak']) {
+    for (const k of ['disableQuic', 'failClosedDns', 'webrtcNoLeak',
+                     'blockCamMic', 'blockGeo', 'blockNotifications']) {
       if (k in patch) SETTINGS[k] = !!patch[k];
     }
   }
@@ -233,6 +268,7 @@ ipcMain.handle('check-exit', () => new Promise((resolve) => {
 
 app.whenReady().then(async () => {
   await applyProxy();
+  setupPrivacy();
   createWindow();
 
   app.on('activate', () => {

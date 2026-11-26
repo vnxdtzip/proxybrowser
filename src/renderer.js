@@ -1,4 +1,4 @@
-// UI do ProxyBrowser: abas com favicon, navegação, painel de circuito (caminho
+// UI do Unleashed Browser: abas com favicon, navegação, painel de circuito (caminho
 // do tráfego + IP de saída + proteções editáveis) e painel de identidade (UA).
 
 const tabstrip = document.getElementById('tabstrip');
@@ -17,6 +17,8 @@ const circuitBtn = document.getElementById('circuitBtn');
 const circuitPanel = document.getElementById('circuitPanel');
 const idBtn = document.getElementById('idBtn');
 const idPanel = document.getElementById('idPanel');
+const privBtn = document.getElementById('privBtn');
+const privPanel = document.getElementById('privPanel');
 
 const ICON = {
   lockSec: '<svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
@@ -30,6 +32,7 @@ let cfg = { homePage: 'about:blank', proxy: {}, userAgent: '', spkiPinned: false
 let settings = { disableQuic: true, failClosedDns: false, webrtcNoLeak: true };
 let currentUA = '';
 let homeURL = 'about:blank';
+let firstHome = true;   // só a 1ª aba da sessão roda a animação completa
 const tabs = [];
 let activeId = null;
 let seq = 0;
@@ -42,6 +45,12 @@ const hostOf = u => { try { return new URL(u).host; } catch { return ''; } };
 const baseOf = u => (u || '').split('?')[0];
 const isStart = u => !!(cfg.startPage && baseOf(u) === baseOf(cfg.startPage));
 const displayUrl = u => (isStart(u) ? '' : (u || ''));
+// URL da home com o flag de animação (completa só na primeira aba da sessão).
+function homeTarget() {
+  const anim = firstHome ? 1 : 0;
+  firstHome = false;
+  return cfg.startPage + (cfg.startPage.includes('?') ? '&' : '?') + 'anim=' + anim;
+}
 
 function normalize(input) {
   const s = (input || '').trim();
@@ -137,7 +146,8 @@ function createTab(target) {
   wv.setAttribute('allowpopups', '');
   wv.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no');
   if (currentUA) wv.setAttribute('useragent', currentUA);
-  wv.src = target || homeURL || 'about:blank';
+  const src0 = target || homeURL || 'about:blank';
+  wv.src = isStart(src0) ? homeTarget() : src0;
   wv.style.display = 'none';
   views.appendChild(wv);
 
@@ -260,15 +270,18 @@ window.addEventListener('keydown', e => {
 
 // --- painéis ---
 function openPanel(which) {
-  for (const p of [circuitPanel, idPanel]) p.classList.toggle('open', p === which && !p.classList.contains('open'));
+  for (const p of [circuitPanel, idPanel, privPanel]) p.classList.toggle('open', p === which && !p.classList.contains('open'));
   if (circuitPanel.classList.contains('open')) renderCircuit();
+  if (privPanel.classList.contains('open')) paintPrivacy();
 }
 circuitBtn.addEventListener('click', e => { e.stopPropagation(); openPanel(circuitPanel); });
 idBtn.addEventListener('click', e => { e.stopPropagation(); openPanel(idPanel); });
+privBtn.addEventListener('click', e => { e.stopPropagation(); openPanel(privPanel); });
 document.getElementById('cpClose').addEventListener('click', () => circuitPanel.classList.remove('open'));
 document.getElementById('idClose').addEventListener('click', () => idPanel.classList.remove('open'));
+document.getElementById('privClose').addEventListener('click', () => privPanel.classList.remove('open'));
 document.addEventListener('click', e => {
-  for (const [p, b] of [[circuitPanel, circuitBtn], [idPanel, idBtn]]) {
+  for (const [p, b] of [[circuitPanel, circuitBtn], [idPanel, idBtn], [privPanel, privBtn]]) {
     if (p.classList.contains('open') && !p.contains(e.target) && !b.contains(e.target))
       p.classList.remove('open');
   }
@@ -281,24 +294,39 @@ const swDns = document.getElementById('swDns');
 const stSpki = document.getElementById('stSpki');
 const restartBar = document.getElementById('restartBar');
 
+const swCam = document.getElementById('swCam');
+const swGeo = document.getElementById('swGeo');
+const swNotif = document.getElementById('swNotif');
+const stWebrtc = document.getElementById('stWebrtc');
+
 function paintSw(el, on) { el.classList.toggle('on', !!on); el.setAttribute('aria-checked', on ? 'true' : 'false'); }
 function paintSettings() {
   paintSw(swQuic, settings.disableQuic);
   paintSw(swWebrtc, settings.webrtcNoLeak);
   paintSw(swDns, settings.failClosedDns);
 }
+function paintPrivacy() {
+  paintSw(swCam, settings.blockCamMic);
+  paintSw(swGeo, settings.blockGeo);
+  paintSw(swNotif, settings.blockNotifications);
+  stWebrtc.textContent = settings.webrtcNoLeak ? 'protegido' : 'exposto';
+  stWebrtc.className = 'state' + (settings.webrtcNoLeak ? ' on' : '');
+}
 async function toggleSetting(key) {
   settings[key] = !settings[key];
-  paintSettings();
+  paintSettings(); paintPrivacy();
   try {
     const r = await window.pb.setSettings({ [key]: settings[key] });
-    if (r && r.settings) { settings = r.settings; paintSettings(); }
+    if (r && r.settings) { settings = r.settings; paintSettings(); paintPrivacy(); }
     if (r && r.restartNeeded) restartBar.classList.add('show');
   } catch (_) {}
 }
 swQuic.addEventListener('click', () => toggleSetting('disableQuic'));
 swWebrtc.addEventListener('click', () => toggleSetting('webrtcNoLeak'));
 swDns.addEventListener('click', () => toggleSetting('failClosedDns'));
+swCam.addEventListener('click', () => toggleSetting('blockCamMic'));
+swGeo.addEventListener('click', () => toggleSetting('blockGeo'));
+swNotif.addEventListener('click', () => toggleSetting('blockNotifications'));
 document.getElementById('restartBtn').addEventListener('click', () => window.pb.relaunch());
 document.getElementById('eoRetry').addEventListener('click', () => { const t = active(); if (t) t.wv.reload(); });
 
@@ -389,5 +417,6 @@ document.getElementById('uaApply').addEventListener('click', () => {
   buildPresets(currentUA);
   uaNow.textContent = currentUA || '(padrão do Chromium)';
   paintSettings();
+  paintPrivacy();
   createTab(homeURL);
 })();

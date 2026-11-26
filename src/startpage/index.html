@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'none'; img-src 'self' data: https:; style-src 'unsafe-inline'; script-src 'self'; connect-src https://ipinfo.io" />
-<title>ProxyBrowser</title>
+<title>Unleashed Browser</title>
 <style>
   :root { --bg:#15171c; --fg:#e7e9ee; --mut:#8a909c; --line:#2c303a;
           --accent:#5a8dd6; --ok:#4ec073; --bad:#e5604f; }
@@ -15,7 +15,7 @@
 
   .brand { position:fixed; top:18px; left:20px; z-index:2; display:flex; align-items:center;
            gap:9px; color:var(--mut); font-size:12px; letter-spacing:.02em; }
-  .brand .d { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .brand .logo { width:20px; height:20px; object-fit:contain; }
 
   .wrap { position:fixed; z-index:2; left:0; right:0; bottom:8%; display:flex;
           flex-direction:column; align-items:center; text-align:center; padding:0 24px; }
@@ -56,7 +56,7 @@
 <body>
   <canvas id="globe"></canvas>
 
-  <div class="brand"><span class="d"></span>ProxyBrowser · túnel</div>
+  <div class="brand"><img class="logo" src="../assets/logo.png" alt="" />Unleashed Browser · túnel</div>
 
   <div class="wrap">
     <div class="endpoints">

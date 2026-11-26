@@ -1,7 +1,7 @@
 # Setup do proxy na VPS + ambiente do lab
 
 Guia passo a passo para o **aluno** subir o endpoint de proxy HTTPS em uma VPS e
-preparar a VM cliente onde o `ProxyBrowser` roda. Serve ao lab da xpsec academy.
+preparar a VM cliente onde o `Unleashed Browser` roda. Serve ao lab da xpsec academy.
 
 > ⚠️ **Escopo de laboratório.** Este proxy só deve receber tráfego da VM de lab
 > do aluno. Nunca aponte uma rede corporativa de produção nem controles de
@@ -14,7 +14,7 @@ preparar a VM cliente onde o `ProxyBrowser` roda. Serve ao lab da xpsec academy.
 ```
    VM cliente (Windows 11, lab)                     VPS (Linux)
    ┌───────────────────────────┐                   ┌────────────────────┐
-   │  ProxyBrowser.exe          │                   │  proxy-server.js   │
+   │  Unleashed Browser.exe          │                   │  proxy-server.js   │
    │  - Umbrella (teste)        │  TLS :8443        │  - Node (sem deps) │
    │  - ManageEngine (teste)    │ ════════════════▶ │  - auth Basic      │
    │  config.json (host=VPS,    │  CONNECT cifrado  │  - cert self-signed│
@@ -33,7 +33,7 @@ destino:443` vai dentro desse TLS, então um DPI no meio não lê o hostname.
 - **VPS** Linux (Ubuntu 22.04/24.04 LTS de referência), com IP público. 1 vCPU /
   1 GB já basta para o lab.
 - Acesso SSH à VPS.
-- A **VM cliente** já com o repositório `ProxyBrowser` (ver README raiz).
+- A **VM cliente** já com o repositório `Unleashed Browser` (ver README raiz).
 - Decida uma **porta** (padrão `8443`; >1024 não precisa de root) e uma **senha**
   forte para o proxy.
 

@@ -1,4 +1,4 @@
-# ProxyBrowser — lab xpsec academy
+# Unleashed Browser — lab xpsec academy
 
 Navegador Electron mínimo que força **todo** o tráfego por um proxy HTTPS.
 Cenário do lab: o aluno precisa dar bypass em filtragem (Umbrella de teste
@@ -7,7 +7,7 @@ bloqueando navegadores ≠ Edge/Chrome; ManageEngine de teste bloqueando sites).
 
 > Por que Electron fura o bloqueio de navegador: o Electron **não lê** as policies
 > do Chrome (`HKLM\...\Policies\Google\Chrome`) nem do Edge. Regras de GPO/Umbrella
-> que valem "para o Chrome" não se aplicam. E o processo chama `ProxyBrowser.exe`,
+> que valem "para o Chrome" não se aplicam. E o processo chama `Unleashed Browser.exe`,
 > não `firefox.exe`/`brave.exe` — blocklist por nome de processo erra o alvo.
 
 ## Estrutura
@@ -103,7 +103,7 @@ falha com `ERR_CERT_AUTHORITY_INVALID` até você resolver isso:
 
 ```bash
 npm run package
-# saída: dist/ProxyBrowser-win32-x64/ProxyBrowser.exe
+# saída: dist/Unleashed Browser-win32-x64/Unleashed Browser.exe
 ```
 
 **Teste de controle de aplicação:** copie a pasta para `%LOCALAPPDATA%` na VM e

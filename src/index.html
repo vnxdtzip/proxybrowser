@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' https: data:" />
-<title>ProxyBrowser</title>
+<title>Unleashed Browser</title>
 <style>
   :root { --bg:#15171c; --bar:#1c1f26; --bar2:#23262e; --line:#2c303a; --fg:#e7e9ee;
           --mut:#8a909c; --ok:#4ec073; --bad:#e5604f; --warn:#d6a53a; --accent:#5a8dd6; }
@@ -194,6 +194,10 @@
       <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
       <span>Identidade</span>
     </button>
+    <button class="tool" id="privBtn" title="Privacidade e permissões">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3.1 7.6-7 9-3.9-1.4-7-4.4-7-9V6z"/></svg>
+      <span>Privacidade</span>
+    </button>
     <button class="tool" id="circuitBtn" title="Como o tráfego está saindo">
       <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M12 8v8"/></svg>
       <span>Circuito</span>
@@ -277,6 +281,54 @@
       <div class="restart" id="restartBar">
         <span>QUIC e DNS só mudam após reiniciar.</span>
         <button id="restartBtn">Reiniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- privacidade -->
+  <div class="panel" id="privPanel">
+    <div class="p-top">
+      <div class="p-h">Privacidade e permissões</div>
+      <button class="p-x" id="privClose" title="Fechar" aria-label="Fechar">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="p-dest">O que os sites podem acessar neste navegador.</div>
+
+    <div class="p-sec" style="border-top:none;padding-top:0;margin-top:0">
+      <div class="p-sec-h">Permissões de sites</div>
+      <div class="row">
+        <div class="rtxt"><div class="rt">Bloquear câmera e microfone</div>
+          <div class="rs">nega acesso a mídia a todos os sites</div></div>
+        <button class="sw" id="swCam" role="switch"></button>
+      </div>
+      <div class="row">
+        <div class="rtxt"><div class="rt">Bloquear localização</div>
+          <div class="rs">nega geolocalização</div></div>
+        <button class="sw" id="swGeo" role="switch"></button>
+      </div>
+      <div class="row">
+        <div class="rtxt"><div class="rt">Bloquear notificações</div>
+          <div class="rs">nega pedidos de notificação</div></div>
+        <button class="sw" id="swNotif" role="switch"></button>
+      </div>
+    </div>
+
+    <div class="p-sec">
+      <div class="p-sec-h">Sempre bloqueado</div>
+      <div class="row read">
+        <div class="rtxt"><div class="rt">USB, HID, serial, Bluetooth</div>
+          <div class="rs">acesso a dispositivos</div></div>
+        <span class="state on">bloqueado</span>
+      </div>
+      <div class="row read">
+        <div class="rtxt"><div class="rt">Captura de tela e clipboard</div>
+          <div class="rs">display-capture e leitura de área de transferência</div></div>
+        <span class="state on">bloqueado</span>
+      </div>
+      <div class="row read">
+        <div class="rtxt"><div class="rt">WebRTC (vazamento de IP)</div>
+          <div class="rs">ajuste no painel Circuito</div></div>
+        <span class="state" id="stWebrtc">—</span>
       </div>
     </div>
   </div>
