@@ -12,6 +12,7 @@ const { app, BrowserWindow, session, ipcMain, dialog, net } = require('electron'
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
+const { ElectronBlocker } = require('@ghostery/adblocker-electron');
 
 // Ordem de busca do config:
 //  1. config.json EXTERNO ao lado do exe (ou raiz do projeto em dev) -> override
@@ -90,7 +91,8 @@ function defaultSettings() {
     // Privacidade (padrão: tudo bloqueado)
     blockCamMic:        true,
     blockGeo:           true,
-    blockNotifications: true
+    blockNotifications: true,
+    blockAds:           true    // bloqueador de anúncios/rastreadores
   };
 }
 function loadSettings() {
@@ -187,6 +189,28 @@ function setupPrivacy() {
   try { ses.setDevicePermissionHandler(() => false); } catch (_) {}
 }
 
+// --- Bloqueador de anúncios/rastreadores (engine embutido, offline) ---
+let blocker = null, blockerActive = false;
+function loadBlocker() {
+  try {
+    const bin = path.join(__dirname, 'assets', 'adblock-engine.bin');
+    blocker = ElectronBlocker.deserialize(fs.readFileSync(bin));
+  } catch (e) {
+    console.error('adblock: engine não carregou:', e.message);
+    blocker = null;
+  }
+}
+function applyAdblock() {
+  if (!blocker) return;
+  const want = !!SETTINGS.blockAds;
+  if (want === blockerActive) return;              // evita re-registrar
+  try {
+    if (want) blocker.enableBlockingInSession(session.defaultSession);
+    else blocker.disableBlockingInSession(session.defaultSession);
+    blockerActive = want;
+  } catch (e) { console.error('adblock:', e.message); }
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1280,
@@ -223,12 +247,13 @@ ipcMain.handle('set-settings', (_e, patch) => {
   const before = { ...SETTINGS };
   if (patch && typeof patch === 'object') {
     for (const k of ['disableQuic', 'failClosedDns', 'webrtcNoLeak',
-                     'blockCamMic', 'blockGeo', 'blockNotifications']) {
+                     'blockCamMic', 'blockGeo', 'blockNotifications', 'blockAds']) {
       if (k in patch) SETTINGS[k] = !!patch[k];
     }
   }
   saveSettings();
   if (SETTINGS.webrtcNoLeak !== before.webrtcNoLeak) applyWebRTCAll();  // aplica na hora
+  if (SETTINGS.blockAds !== before.blockAds) applyAdblock();            // liga/desliga na hora
   // QUIC e DNS são switches de boot -> só valem após reiniciar.
   const restartNeeded =
     SETTINGS.disableQuic !== before.disableQuic ||
@@ -269,6 +294,8 @@ ipcMain.handle('check-exit', () => new Promise((resolve) => {
 app.whenReady().then(async () => {
   await applyProxy();
   setupPrivacy();
+  loadBlocker();
+  applyAdblock();
   createWindow();
 
   app.on('activate', () => {

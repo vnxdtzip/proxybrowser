@@ -8,6 +8,7 @@
   "scripts": {
     "start": "electron .",
     "encrypt-config": "node build/encrypt-config.js",
+    "adblock": "node build/gen-adblock.js",
     "package": "electron-packager . \"Unleashed Browser\" --platform=win32 --arch=x64 --out=dist --overwrite --icon=src/assets/icon.ico --ignore=^/server --ignore=^/dist --ignore=^/build --ignore=^/config\\.json$",
     "build": "npm run encrypt-config && npm run package",
     "server": "node server/proxy-server.js"
@@ -15,5 +16,9 @@
   "devDependencies": {
     "@electron/packager": "^20.3.0",
     "electron": "^45.5.0"
+  },
+  "dependencies": {
+    "@ghostery/adblocker": "^2.20.3",
+    "@ghostery/adblocker-electron": "^2.20.3"
   }
 }

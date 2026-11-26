@@ -297,6 +297,7 @@ const restartBar = document.getElementById('restartBar');
 const swCam = document.getElementById('swCam');
 const swGeo = document.getElementById('swGeo');
 const swNotif = document.getElementById('swNotif');
+const swAds = document.getElementById('swAds');
 const stWebrtc = document.getElementById('stWebrtc');
 
 function paintSw(el, on) { el.classList.toggle('on', !!on); el.setAttribute('aria-checked', on ? 'true' : 'false'); }
@@ -309,6 +310,7 @@ function paintPrivacy() {
   paintSw(swCam, settings.blockCamMic);
   paintSw(swGeo, settings.blockGeo);
   paintSw(swNotif, settings.blockNotifications);
+  paintSw(swAds, settings.blockAds);
   stWebrtc.textContent = settings.webrtcNoLeak ? 'protegido' : 'exposto';
   stWebrtc.className = 'state' + (settings.webrtcNoLeak ? ' on' : '');
 }
@@ -327,6 +329,7 @@ swDns.addEventListener('click', () => toggleSetting('failClosedDns'));
 swCam.addEventListener('click', () => toggleSetting('blockCamMic'));
 swGeo.addEventListener('click', () => toggleSetting('blockGeo'));
 swNotif.addEventListener('click', () => toggleSetting('blockNotifications'));
+swAds.addEventListener('click', () => toggleSetting('blockAds'));
 document.getElementById('restartBtn').addEventListener('click', () => window.pb.relaunch());
 document.getElementById('eoRetry').addEventListener('click', () => { const t = active(); if (t) t.wv.reload(); });
 
