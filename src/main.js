@@ -8,11 +8,40 @@
 //  - QUIC/HTTP3 desligado para nada escapar por UDP:443
 //  - (opcional) SPKI pin para confiar SOMENTE no cert do proxy do lab
 
-const { app, BrowserWindow, session, ipcMain } = require('electron');
+const { app, BrowserWindow, session, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-const CFG = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config.json'), 'utf8'));
+// Onde procurar o config.json:
+//  - empacotado (.exe): AO LADO do executável -> editável sem recompilar,
+//    e a senha NÃO fica assada dentro do binário distribuído.
+//  - dev (npm start): raiz do projeto.
+function resolveConfigPath() {
+  const candidates = [];
+  if (app.isPackaged) {
+    candidates.push(path.join(path.dirname(process.execPath), 'config.json'));
+  }
+  candidates.push(path.join(__dirname, '..', 'config.json'));
+  for (const c of candidates) { if (fs.existsSync(c)) return c; }
+  return candidates[0];
+}
+
+function loadConfig() {
+  const p = resolveConfigPath();
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch (err) {
+    const msg = `Não foi possível ler o config.json.\n\nProcurado em:\n  ${p}\n\n` +
+      `Coloque um config.json ao lado do ProxyBrowser.exe ` +
+      `(use config.example.json como modelo).\n\nDetalhe: ${err.message}`;
+    try { dialog.showErrorBox('ProxyBrowser — config ausente', msg); } catch (_) {}
+    console.error(msg);
+    app.exit(1);
+    throw err;
+  }
+}
+
+const CFG = loadConfig();
 const P = CFG.proxy;
 const H = CFG.hardening || {};
 
