@@ -26,7 +26,7 @@ addEventListener('resize', resize); resize();
 const TILT = 0.5;
 let ang = 0, pulse = 0;
 let state = 'connecting';               // 'connected' | 'failed'
-const COL = { connecting: '#5a8dd6', connected: '#4ec073', failed: '#e5604f' };
+const COL = { connecting: '#58a6ff', connected: '#3fb950', failed: '#f85149' };
 
 const D2R = Math.PI / 180;
 function unit(lat, lng) {
@@ -121,8 +121,8 @@ function frame() {
   ctx.clearRect(0, 0, W, H);
   drawDots();
   drawArc();
-  drawMarker(client.lat, client.lng, '#e7e9ee', 'Você');
-  drawMarker(vps.lat, vps.lng, COL[state] === COL.connecting ? '#5a8dd6' : COL[state], 'VPS');
+  drawMarker(client.lat, client.lng, '#e9ebf0', 'Você');
+  drawMarker(vps.lat, vps.lng, COL[state] === COL.connecting ? '#58a6ff' : COL[state], 'VPS');
   ang += 0.0015;
   pulse = (pulse + 0.007) % 1;
   requestAnimationFrame(frame);
@@ -143,10 +143,10 @@ const epClient = document.getElementById('epClient');
 epVps.textContent = VPS_HOST + (VPS_PORT ? ':' + VPS_PORT : '');
 
 const STEPS = [
-  ['Inicializando túnel...', 15],
-  ['Mascarando tráfego...', 40],
-  ['Criptografando túnel...', 70],
-  ['Verificando saída...', 92]
+  ['Estabelecendo túnel TLS…', 15],
+  ['Forçando toda a saída pelo proxy…', 40],
+  ['Fechando rotas diretas (fail-closed)…', 70],
+  ['Confirmando IP de saída…', 92]
 ];
 const STEP_MS = 850;
 function setBar(p) { barFill.style.width = p + '%'; }
@@ -167,7 +167,7 @@ if (ANIM) {
   step();
   minMs = STEPS.length * STEP_MS + 250;
 } else {
-  msgEl.textContent = 'Verificando saída...';
+  msgEl.textContent = 'Confirmando IP de saída…';
   setBar(85);
   minMs = 200;
 }

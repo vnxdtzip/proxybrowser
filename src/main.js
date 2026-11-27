@@ -215,9 +215,20 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1280,
     height: 860,
-    backgroundColor: '#14161a',
+    minWidth: 760,
+    minHeight: 480,
+    backgroundColor: '#0e0f13',
     title: 'Unleashed Browser',
     icon: path.join(__dirname, 'assets', 'logo512.png'),
+    // Chrome de janela ao estilo navegador moderno (Win11/macOS): sem barra de
+    // título do SO; as abas ocupam essa faixa e os controles (min/max/close) são
+    // desenhados pelo próprio SO sobre a UI (Window Controls Overlay). A UI usa
+    // env(titlebar-area-*) para não passar por baixo dos botões.
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#15171c', symbolColor: '#aab1bd', height: 40 },
+    // Mica (Windows 11): tinge sutilmente o chrome com o desktop quando disponível;
+    // se o SO não suportar, cai no backgroundColor sólido sem quebrar nada.
+    backgroundMaterial: 'mica',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

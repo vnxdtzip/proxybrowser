@@ -19,6 +19,8 @@ const idBtn = document.getElementById('idBtn');
 const idPanel = document.getElementById('idPanel');
 const privBtn = document.getElementById('privBtn');
 const privPanel = document.getElementById('privPanel');
+const pillDot = document.getElementById('pillDot');
+const pillLabel = document.getElementById('pillLabel');
 
 const ICON = {
   lockSec: '<svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
@@ -131,6 +133,20 @@ function renderStatus(t) {
   connText.textContent = cls === 'bad' ? msg : '';   // só mostra texto em erro
   pageText.textContent = displayUrl(t.pageUrl);
   setLock(isStart(t.pageUrl) ? '' : (t.pageUrl || ''));
+  updatePill(t);
+}
+
+// Pill de túnel na toolbar: reflete o estado da aba ativa. Como TODO o tráfego é
+// forçado pelo proxy (fail-closed), uma carga concluída já prova o túnel de pé.
+function updatePill(t) {
+  t = t || active();
+  const st = (t && t.state && t.state[0]) || 'warn';
+  let cls, label;
+  if (st === 'bad')      { cls = 'bad';        label = 'Túnel caiu'; }
+  else if (st === 'ok')  { cls = 'ok';         label = cfg._exitCountry ? 'Túnel · ' + cfg._exitCountry : 'Túnel ativo'; }
+  else                   { cls = 'connecting'; label = 'Conectando'; }
+  if (pillDot) pillDot.className = 'pill-dot ' + cls;
+  if (pillLabel) pillLabel.textContent = label;
 }
 
 function updateNav(t) {
@@ -271,20 +287,28 @@ window.addEventListener('keydown', e => {
 // --- painéis ---
 function openPanel(which) {
   for (const p of [circuitPanel, idPanel, privPanel]) p.classList.toggle('open', p === which && !p.classList.contains('open'));
+  // destaca o botão correspondente ao painel aberto
+  privBtn.classList.toggle('active', privPanel.classList.contains('open'));
+  idBtn.classList.toggle('active', idPanel.classList.contains('open'));
   if (circuitPanel.classList.contains('open')) renderCircuit();
   if (privPanel.classList.contains('open')) paintPrivacy();
 }
 circuitBtn.addEventListener('click', e => { e.stopPropagation(); openPanel(circuitPanel); });
 idBtn.addEventListener('click', e => { e.stopPropagation(); openPanel(idPanel); });
 privBtn.addEventListener('click', e => { e.stopPropagation(); openPanel(privPanel); });
-document.getElementById('cpClose').addEventListener('click', () => circuitPanel.classList.remove('open'));
-document.getElementById('idClose').addEventListener('click', () => idPanel.classList.remove('open'));
-document.getElementById('privClose').addEventListener('click', () => privPanel.classList.remove('open'));
+function syncPanelButtons() {
+  privBtn.classList.toggle('active', privPanel.classList.contains('open'));
+  idBtn.classList.toggle('active', idPanel.classList.contains('open'));
+}
+document.getElementById('cpClose').addEventListener('click', () => { circuitPanel.classList.remove('open'); });
+document.getElementById('idClose').addEventListener('click', () => { idPanel.classList.remove('open'); syncPanelButtons(); });
+document.getElementById('privClose').addEventListener('click', () => { privPanel.classList.remove('open'); syncPanelButtons(); });
 document.addEventListener('click', e => {
   for (const [p, b] of [[circuitPanel, circuitBtn], [idPanel, idBtn], [privPanel, privBtn]]) {
     if (p.classList.contains('open') && !p.contains(e.target) && !b.contains(e.target))
       p.classList.remove('open');
   }
+  syncPanelButtons();
 });
 
 // --- circuito: info + proteções (toggles) ---
@@ -358,9 +382,11 @@ document.getElementById('cpCheck').addEventListener('click', async () => {
     if (r.ok) {
       out.textContent = r.ip + (r.country ? '  (' + r.country + ')' : '');
       cfg._exitGeo = [r.city, r.country].filter(Boolean).join(', ') || (r.org || '');
+      cfg._exitCountry = r.country || '';
       const match = r.ip === (cfg.proxy && cfg.proxy.host);
       out.title = (match ? 'confere: é o IP da sua VPS. ' : '') + (r.org || '');
       renderCircuit();
+      updatePill();
     } else { out.textContent = 'falhou — ' + r.error; }
   } catch (err) { out.textContent = 'erro — ' + err.message; }
   finally { btn.disabled = false; }
