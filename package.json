@@ -9,7 +9,7 @@
     "start": "electron .",
     "encrypt-config": "node build/encrypt-config.js",
     "adblock": "node build/gen-adblock.js",
-    "package": "electron-packager . \"Unleashed Browser\" --platform=win32 --arch=x64 --out=dist --overwrite --icon=src/assets/icon.ico --ignore=^/server --ignore=^/dist --ignore=^/build --ignore=^/config\\.json$",
+    "package": "node build/package-clean.js",
     "build": "npm run encrypt-config && npm run package",
     "server": "node server/proxy-server.js"
   },
